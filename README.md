@@ -5,7 +5,7 @@
 ## Introduction
 
 corinna-ai
-An AI-powered chatbot designed to enhance customer engagement by providing customizable interactions. Corinna-AI leverages advanced natural language processing (NLP) to understand user queries and respond intelligently. It allows business owners to personalize the chatbot's functionality, including custom greetings, email collection, and direct chat redirection for a tailored user experience.
+An AI-powered chatbot designed to enhance customer engagement by providing customizable interactions. Sales-AI leverages advanced natural language processing (NLP) to understand user queries and respond intelligently. It allows business owners to personalize the chatbot's functionality, including custom greetings, email collection, and direct chat redirection for a tailored user experience.
 
 ## Getting Started
 
@@ -98,7 +98,7 @@ bun dev
 
 This will run the application in development mode.
 
-Navigate to http://localhost:3000 to view the application.
+Navigate to http://localhost:3002 to view the application.
 
 ## Chatdocrepo File Structure
 

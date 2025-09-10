@@ -16,7 +16,8 @@ datasource db {
 model User {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   fullname  String
-  clerkId   String   @unique
+  email     String   @unique
+  password  String
   type      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

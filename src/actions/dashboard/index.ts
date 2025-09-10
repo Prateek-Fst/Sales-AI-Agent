@@ -1,7 +1,7 @@
 'use server'
 
 import { client } from '@/lib/prisma'
-import { currentUser } from '@clerk/nextjs'
+import { getCurrentUser } from '@/lib/auth'
 import Stripe from 'stripe'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET!, {
@@ -11,13 +11,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET!, {
 
 export const getUserClients = async () => {
   try {
-    const user = await currentUser()
+    const user = await getCurrentUser()
     if (user) {
       const clients = await client.customer.count({
         where: {
           Domain: {
             User: {
-              clerkId: user.id,
+              id: user.id,
             },
           },
         },
@@ -33,11 +33,11 @@ export const getUserClients = async () => {
 
 export const getUserBalance = async () => {
   try {
-    const user = await currentUser()
+    const user = await getCurrentUser()
     if (user) {
       const connectedStripe = await client.user.findUnique({
         where: {
-          clerkId: user.id,
+          id: user.id,
         },
         select: {
           stripeId: true,
@@ -65,11 +65,11 @@ export const getUserBalance = async () => {
 
 export const getUserPlanInfo = async () => {
   try {
-    const user = await currentUser()
+    const user = await getCurrentUser()
     if (user) {
       const plan = await client.user.findUnique({
         where: {
-          clerkId: user.id,
+          id: user.id,
         },
         select: {
           _count: {
@@ -100,13 +100,13 @@ export const getUserPlanInfo = async () => {
 
 export const getUserTotalProductPrices = async () => {
   try {
-    const user = await currentUser()
+    const user = await getCurrentUser()
     if (user) {
       const products = await client.product.findMany({
         where: {
           Domain: {
             User: {
-              clerkId: user.id,
+              id: user.id,
             },
           },
         },
@@ -116,7 +116,7 @@ export const getUserTotalProductPrices = async () => {
       })
 
       if (products) {
-        const total = products.reduce((total, next) => {
+        const total = products.reduce((total:any, next:any) => {
           return total + next.price
         }, 0)
 
@@ -130,11 +130,11 @@ export const getUserTotalProductPrices = async () => {
 
 export const getUserTransactions = async () => {
   try {
-    const user = await currentUser()
+    const user = await getCurrentUser()
     if (user) {
       const connectedStripe = await client.user.findUnique({
         where: {
-          clerkId: user.id,
+          id: user.id,
         },
         select: {
           stripeId: true,

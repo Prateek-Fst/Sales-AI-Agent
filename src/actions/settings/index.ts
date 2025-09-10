@@ -1,14 +1,15 @@
 'use server'
 import { client } from '@/lib/prisma'
-import { clerkClient, currentUser } from '@clerk/nextjs'
+import { getCurrentUser } from '@/lib/auth'
+import bcrypt from 'bcryptjs'
 
 export const onIntegrateDomain = async (domain: string, icon: string) => {
-  const user = await currentUser()
+  const user = await getCurrentUser()
   if (!user) return
   try {
     const subscription = await client.user.findUnique({
       where: {
-        clerkId: user.id,
+        id: user.id,
       },
       select: {
         _count: {
@@ -25,7 +26,7 @@ export const onIntegrateDomain = async (domain: string, icon: string) => {
     })
     const domainExists = await client.user.findFirst({
       where: {
-        clerkId: user.id,
+        id: user.id,
         domains: {
           some: {
             name: domain,
@@ -45,7 +46,7 @@ export const onIntegrateDomain = async (domain: string, icon: string) => {
       ) {
         const newDomain = await client.user.update({
           where: {
-            clerkId: user.id,
+            id: user.id,
           },
           data: {
             domains: {
@@ -83,11 +84,11 @@ export const onIntegrateDomain = async (domain: string, icon: string) => {
 
 export const onGetSubscriptionPlan = async () => {
   try {
-    const user = await currentUser()
+    const user = await getCurrentUser()
     if (!user) return
     const plan = await client.user.findUnique({
       where: {
-        clerkId: user.id,
+        id: user.id,
       },
       select: {
         subscription: {
@@ -106,12 +107,12 @@ export const onGetSubscriptionPlan = async () => {
 }
 
 export const onGetAllAccountDomains = async () => {
-  const user = await currentUser()
+  const user = await getCurrentUser()
   if (!user) return
   try {
     const domains = await client.user.findUnique({
       where: {
-        clerkId: user.id,
+        id: user.id,
       },
       select: {
         id: true,
@@ -141,10 +142,14 @@ export const onGetAllAccountDomains = async () => {
 }
 export const onUpdatePassword = async (password: string) => {
   try {
-    const user = await currentUser()
+    const user = await getCurrentUser()
 
     if (!user) return null
-    const update = await clerkClient.users.updateUser(user.id, { password })
+    const hashedPassword = await bcrypt.hash(password, 12)
+    const update = await client.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword }
+    })
     if (update) {
       return { status: 200, message: 'Password updated' }
     }
@@ -154,12 +159,12 @@ export const onUpdatePassword = async (password: string) => {
 }
 
 export const onGetCurrentDomainInfo = async (domain: string) => {
-  const user = await currentUser()
+  const user = await getCurrentUser()
   if (!user) return
   try {
     const userDomain = await client.user.findUnique({
       where: {
-        clerkId: user.id,
+        id: user.id,
       },
       select: {
         subscription: {
@@ -242,7 +247,7 @@ export const onUpdateDomain = async (id: string, name: string) => {
 }
 
 export const onChatBotImageUpdate = async (id: string, icon: string) => {
-  const user = await currentUser()
+  const user = await getCurrentUser()
 
   if (!user) return
 
@@ -307,7 +312,7 @@ export const onUpdateWelcomeMessage = async (
 }
 
 export const onDeleteUserDomain = async (id: string) => {
-  const user = await currentUser()
+  const user = await getCurrentUser()
 
   if (!user) return
 
@@ -315,7 +320,7 @@ export const onDeleteUserDomain = async (id: string) => {
     //first verify that domain belongs to user
     const validUser = await client.user.findUnique({
       where: {
-        clerkId: user.id,
+        id: user.id,
       },
       select: {
         id: true,
@@ -481,11 +486,11 @@ export const onGetAllFilterQuestions = async (id: string) => {
 
 export const onGetPaymentConnected = async () => {
   try {
-    const user = await currentUser()
+    const user = await getCurrentUser()
     if (user) {
       const connected = await client.user.findUnique({
         where: {
-          clerkId: user.id,
+          id: user.id,
         },
         select: {
           stripeId: true,

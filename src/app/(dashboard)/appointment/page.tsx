@@ -5,13 +5,13 @@ import Section from '@/components/section-label'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { currentUser } from '@clerk/nextjs'
+import { getCurrentUser } from '@/lib/auth'
 import React from 'react'
 
 type Props = {}
 
 const Page = async (props: Props) => {
-  const user = await currentUser()
+  const user = await getCurrentUser()
 
   if (!user) return null
   const domainBookings = await onGetAllBookingsForCurrentUser(user.id)

@@ -7,7 +7,7 @@ export type UserRegistrationProps = {
   confirmEmail: string
   password: string
   confirmPassword: string
-  otp: string
+  otp?: string
 }
 
 export const UserRegistrationSchema: ZodType<UserRegistrationProps> = z
@@ -29,7 +29,7 @@ export const UserRegistrationSchema: ZodType<UserRegistrationProps> = z
         'password should contain only alphabets and numbers'
       ),
     confirmPassword: z.string(),
-    otp: z.string().min(6, { message: 'You must enter a 6 digit code' }),
+    otp: z.string().optional(),
   })
   .refine((schema) => schema.password === schema.confirmPassword, {
     message: 'passwords do not match',

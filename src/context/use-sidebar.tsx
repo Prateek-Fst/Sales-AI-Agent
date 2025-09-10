@@ -5,7 +5,6 @@ import React from 'react'
 import { useEffect, useState } from 'react'
 import { useChatContext } from './user-chat-context'
 import { onGetConversationMode, onToggleRealtime } from '@/actions/conversation'
-import { useClerk } from '@clerk/nextjs'
 
 const useSideBar = () => {
   const [expand, setExpand] = useState<boolean | undefined>(undefined)
@@ -51,9 +50,11 @@ const useSideBar = () => {
   }, [chatRoom])
 
   const page = pathname.split('/').pop()
-  const { signOut } = useClerk()
 
-  const onSignOut = () => signOut(() => router.push('/'))
+  const onSignOut = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.push('/')
+  }
 
   const onExpand = () => setExpand((prev) => !prev)
 

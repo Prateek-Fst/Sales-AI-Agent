@@ -1,5 +1,5 @@
 import { client } from '@/lib/prisma'
-import { currentUser } from '@clerk/nextjs'
+import { getCurrentUser } from '@/lib/auth'
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
@@ -10,7 +10,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET!, {
 
 export async function GET() {
   try {
-    const user = await currentUser()
+    const user = await getCurrentUser()
     if (!user) return new NextResponse('User not authenticated', { status: 401 })
 
     const account = await stripe.accounts.create({
@@ -102,7 +102,7 @@ export async function GET() {
     if (!complete) throw new Error('Failed to finalize Stripe account update')
 
     const saveAccountId = await client.user.update({
-      where: { clerkId: user.id },
+      where: { id: user.id },
       data: { stripeId: account.id },
     })
 
@@ -110,8 +110,8 @@ export async function GET() {
 
     const accountLink = await stripe.accountLinks.create({
       account: account.id,
-      refresh_url: 'http://localhost:3000/callback/stripe/refresh',
-      return_url: 'http://localhost:3000/callback/stripe/success',
+      refresh_url: 'http://localhost:3002/callback/stripe/refresh',
+      return_url: 'http://localhost:3002/callback/stripe/success',
       type: 'account_onboarding',
       collect: 'eventually_due',
     })

@@ -1,14 +1,14 @@
 'use server'
 
 import { client } from '@/lib/prisma'
-import { currentUser } from '@clerk/nextjs'
+import { getCurrentUser } from '@/lib/auth'
 import nodemailer from 'nodemailer'
 
 export const onGetAllCustomers = async (id: string) => {
   try {
     const customers = await client.user.findUnique({
       where: {
-        clerkId: id,
+        id: id,
       },
       select: {
         subscription: {
@@ -45,7 +45,7 @@ export const onGetAllCampaigns = async (id: string) => {
   try {
     const campaigns = await client.user.findUnique({
       where: {
-        clerkId: id,
+        id: id,
       },
       select: {
         campaign: {
@@ -69,12 +69,12 @@ export const onGetAllCampaigns = async (id: string) => {
 
 export const onCreateMarketingCampaign = async (name: string) => {
   try {
-    const user = await currentUser()
+    const user = await getCurrentUser()
     if (!user) return null
 
     const campaign = await client.user.update({
       where: {
-        clerkId: user.id,
+        id: user.id,
       },
       data: {
         campaign: {
@@ -136,7 +136,7 @@ export const onAddCustomersToEmail = async (
 
 export const onBulkMailer = async (email: string[], campaignId: string) => {
   try {
-    const user = await currentUser()
+    const user = await getCurrentUser()
     if (!user) return null
 
     //get the template for this campaign
@@ -177,7 +177,7 @@ export const onBulkMailer = async (email: string[], campaignId: string) => {
 
       const creditsUsed = await client.user.update({
         where: {
-          clerkId: user.id,
+          id: user.id,
         },
         data: {
           subscription: {
@@ -198,11 +198,11 @@ export const onBulkMailer = async (email: string[], campaignId: string) => {
 
 export const onGetAllCustomerResponses = async (id: string) => {
   try {
-    const user = await currentUser()
+    const user = await getCurrentUser()
     if (!user) return null
     const answers = await client.user.findUnique({
       where: {
-        clerkId: user.id,
+        id: user.id,
       },
       select: {
         domains: {

@@ -1,13 +1,11 @@
 import { useToast } from '@/components/ui/use-toast'
 import { UserLoginProps, UserLoginSchema } from '@/schemas/auth.schema'
-import { useSignIn } from '@clerk/nextjs'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 
 export const useSignInForm = () => {
-  const { isLoaded, setActive, signIn } = useSignIn()
   const [loading, setLoading] = useState<boolean>(false)
   const router = useRouter()
   const { toast } = useToast()
@@ -15,32 +13,38 @@ export const useSignInForm = () => {
     resolver: zodResolver(UserLoginSchema),
     mode: 'onChange',
   })
+  
   const onHandleSubmit = methods.handleSubmit(
     async (values: UserLoginProps) => {
-      if (!isLoaded) return
-
       try {
         setLoading(true)
-        const authenticated = await signIn.create({
-          identifier: values.email,
-          password: values.password,
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(values),
         })
 
-        if (authenticated.status === 'complete') {
-          await setActive({ session: authenticated.createdSessionId })
+        const data = await response.json()
+
+        if (response.ok) {
           toast({
             title: 'Success',
             description: 'Welcome back!',
           })
           router.push('/dashboard')
-        }
-      } catch (error: any) {
-        setLoading(false)
-        if (error.errors[0].code === 'form_password_incorrect')
+        } else {
           toast({
             title: 'Error',
-            description: 'email/password is incorrect try again',
+            description: data.error || 'Login failed',
           })
+        }
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: 'Something went wrong',
+        })
+      } finally {
+        setLoading(false)
       }
     }
   )

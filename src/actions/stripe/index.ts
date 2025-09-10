@@ -1,7 +1,7 @@
 'use server'
 
 import { client } from '@/lib/prisma'
-import { currentUser } from '@clerk/nextjs'
+import { getCurrentUser } from '@/lib/auth'
 import Stripe from 'stripe'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET!, {
@@ -37,11 +37,11 @@ export const onUpdateSubscription = async (
   plan: 'STANDARD' | 'PRO' | 'ULTIMATE'
 ) => {
   try {
-    const user = await currentUser()
+    const user = await getCurrentUser()
     if (!user) return
     const update = await client.user.update({
       where: {
-        clerkId: user.id,
+        id: user.id,
       },
       data: {
         subscription: {

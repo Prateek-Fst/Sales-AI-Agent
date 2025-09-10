@@ -3,12 +3,11 @@
 import { client } from '@/lib/prisma'
 import { extractEmailsFromString, extractURLfromString } from '@/lib/utils'
 import { onRealTimeChat } from '../conversation'
-import { clerkClient } from '@clerk/nextjs'
 import { onMailer } from '../mailer'
-import OpenAi from 'openai'
+import Groq from 'groq-sdk'
 
-const openai = new OpenAi({
-  apiKey: process.env.OPEN_AI_KEY,
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
 })
 
 export const onStoreConversations = async (
@@ -100,7 +99,8 @@ export const onAiChatBotAssistant = async (
           select: {
             User: {
               select: {
-                clerkId: true,
+                id: true,
+                email: true,
               },
             },
             name: true,
@@ -170,11 +170,7 @@ export const onAiChatBotAssistant = async (
           )
 
           if (!checkCustomer.customer[0].chatRoom[0].mailed) {
-            const user = await clerkClient.users.getUser(
-              checkCustomer.User?.clerkId!
-            )
-
-            onMailer(user.emailAddresses[0].emailAddress)
+            onMailer(checkCustomer.User?.email!)
 
             //update mail status to prevent spamming
             const mailed = await client.chatRoom.update({
@@ -205,7 +201,7 @@ export const onAiChatBotAssistant = async (
           author
         )
 
-        const chatCompletion = await openai.chat.completions.create({
+        const chatCompletion = await groq.chat.completions.create({
           messages: [
             {
               role: 'assistant',
@@ -223,16 +219,16 @@ export const onAiChatBotAssistant = async (
               Always maintain character and stay respectfull.
 
               The array of questions : [${chatBotDomain.filterQuestions
-                .map((questions) => questions.question)
+                .map((questions:any) => questions.question)
                 .join(', ')}]
 
               if the customer says something out of context or inapporpriate. Simply say this is beyond you and you will get a real user to continue the conversation. And add a keyword (realtime) at the end.
 
-              if the customer agrees to book an appointment send them this link http://localhost:3000/portal/${id}/appointment/${
+              if the customer agrees to book an appointment send them this link http://localhost:3002/portal/${id}/appointment/${
                 checkCustomer?.customer[0].id
               }
 
-              if the customer wants to buy a product redirect them to the payment page http://localhost:3000/portal/${id}/payment/${
+              if the customer wants to buy a product redirect them to the payment page http://localhost:3002/portal/${id}/payment/${
                 checkCustomer?.customer[0].id
               }
           `,
@@ -243,7 +239,7 @@ export const onAiChatBotAssistant = async (
               content: message,
             },
           ],
-          model: 'gpt-3.5-turbo',
+          model: 'llama-3.3-70b-versatile',
         })
 
         if (chatCompletion.choices[0].message.content?.includes('(realtime)')) {
@@ -337,15 +333,22 @@ export const onAiChatBotAssistant = async (
         }
       }
       console.log('No customer')
-      const chatCompletion = await openai.chat.completions.create({
+      const chatCompletion = await groq.chat.completions.create({
         messages: [
           {
             role: 'assistant',
             content: `
-            You are a highly knowledgeable and experienced sales representative for a ${chatBotDomain.name} that offers a valuable product or service. Your goal is to have a natural, human-like conversation with the customer in order to understand their needs, provide relevant information, and ultimately guide them towards making a purchase or redirect them to a link if they havent provided all relevant information.
-            Right now you are talking to a customer for the first time. Start by giving them a warm welcome on behalf of ${chatBotDomain.name} and make them feel welcomed.
-
-            Your next task is lead the conversation naturally to get the customers email address. Be respectful and never break character
+            You are a highly knowledgeable and experienced sales representative for ${chatBotDomain.name}. 
+            
+            BUSINESS CONTEXT: Based on the domain name, infer the business type and services. For example:
+            - If domain contains 'dental/dentist' - you're a dental practice
+            - If domain contains 'restaurant/food' - you're a restaurant
+            - If domain contains 'gym/fitness' - you're a fitness center
+            - If domain contains 'shop/store' - you're a retail business
+            
+            Your goal is to have a natural conversation to understand customer needs and guide them towards booking appointments or making purchases.
+            
+            Start with a warm welcome and naturally ask for their email address. Be respectful and stay in character as a representative of ${chatBotDomain.name}.
 
           `,
           },
@@ -355,7 +358,7 @@ export const onAiChatBotAssistant = async (
             content: message,
           },
         ],
-        model: 'gpt-3.5-turbo',
+        model: 'llama-3.3-70b-versatile',
       })
 
       if (chatCompletion) {
