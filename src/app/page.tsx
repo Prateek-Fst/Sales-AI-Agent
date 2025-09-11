@@ -26,7 +26,7 @@ export default async function Home() {
             An AI powered sales assistant chatbot
           </span>
           <Image
-            src="/images/corinna-ai-logo.png"
+            src="/images/logo2.png"
             width={500}
             height={100}
             alt="Logo"
@@ -40,7 +40,7 @@ export default async function Home() {
             Start For Free
           </Button>
           <Image
-            src="/images/iphonecorinna.png"
+            src="/images/sales-AI.png"
             width={400}
             height={100}
             alt="Logo"

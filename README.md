@@ -1,24 +1,24 @@
 <img src="/public/images/logo.png" alt="logo" width="300" height="150">
 
-# corinna-ai
+# Sales-AI
 
 ## Introduction
 
-corinna-ai
+Sales-ai
 An AI-powered chatbot designed to enhance customer engagement by providing customizable interactions. Sales-AI leverages advanced natural language processing (NLP) to understand user queries and respond intelligently. It allows business owners to personalize the chatbot's functionality, including custom greetings, email collection, and direct chat redirection for a tailored user experience.
 
 ## Getting Started
 
-To get started with corinna-ai, follow these steps:
+To get started with Sales-ai, follow these steps:
 
 ## Clone the Repository
 
 ```bash
-git@github.com:Maheshwarreddy970/corinna-ai.git
+git@github.com:Maheshwarreddy970/Sales-ai.git
 ```
 
 ```bash
-cd corinna-ai
+cd Sales-ai
 ```
 
 ## Environment Variables
@@ -105,16 +105,16 @@ Navigate to http://localhost:3002 to view the application.
 ChatDoc uses a monorepo setup managed by Turborepo and includes a Next.js application. Below is an overview of the file structure:
 
 ````bash
-# corinna-ai
+# Sales-ai
 
-corinna-ai is a cutting-edge web application designed to provide seamless user experiences with robust backend support. This repository houses the core of corinna-ai, including its frontend, backend, and associated configurations.
+Sales-ai is a cutting-edge web application designed to provide seamless user experiences with robust backend support. This repository houses the core of Sales-ai, including its frontend, backend, and associated configurations.
 
 ## Project Structure
 
 Below is the structure of the main folders and files:
 
 ```plaintext
-corinna-ai/
+Sales-ai/
 │
 ├── prisma/                         # Prisma ORM setup and schema files
 ├── public/                         # Public assets (images, fonts, etc.)
