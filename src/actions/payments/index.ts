@@ -1,6 +1,6 @@
 'use server'
 
-import { client } from '@/lib/prisma'
+import { client } from '@/lib/db'
 
 export const onGetDomainProductsAndConnectedAccountId = async (id: string) => {
   try {

@@ -77,7 +77,7 @@ export const useCompleteCustomerPayment = (onNext: () => void) => {
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: 'http://localhost:3002/settings',
+          return_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings`,
         },
         redirect: 'if_required',
       })
@@ -108,6 +108,7 @@ export const useSubscriptions = (plan: 'STANDARD' | 'PRO' | 'ULTIMATE') => {
   const [payment, setPayment] = useState<'STANDARD' | 'PRO' | 'ULTIMATE'>(plan)
   const { toast } = useToast()
   const router = useRouter()
+
   const onUpdatetToFreTier = async () => {
     try {
       setLoading(true)
@@ -175,14 +176,13 @@ export const useCompletePayment = (
       return null
     }
 
-
     try {
       setProcessing(true)
 
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: 'http://localhost:3002/settings',
+          return_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings`,
         },
         redirect: 'if_required',
       })

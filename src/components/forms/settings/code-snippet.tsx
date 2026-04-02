@@ -28,16 +28,16 @@ const CodeSnippet = ({ id }: Props) => {
         }
     ')
     
-    iframe.src = "http://localhost:3002/chatbot"
+    iframe.src = "${process.env.NEXT_PUBLIC_APP_URL}/chatbot"
     iframe.classList.add('chat-frame')
     document.body.appendChild(iframe)
     
     window.addEventListener("message", (e) => {
-        if(e.origin !== "http://localhost:3002") return null
+        if(e.origin !== "${process.env.NEXT_PUBLIC_APP_URL}") return null
         let dimensions = JSON.parse(e.data)
         iframe.width = dimensions.width
         iframe.height = dimensions.height
-        iframe.contentWindow.postMessage("${id}", "http://localhost:3002/")
+        iframe.contentWindow.postMessage("${id}", "${process.env.NEXT_PUBLIC_APP_URL}/")
     })
         `
 

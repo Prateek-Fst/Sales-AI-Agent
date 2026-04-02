@@ -1,5 +1,5 @@
 import { onAiChatBotAssistant, onGetCurrentChatBot } from '@/actions/bot'
-import { postToParent, pusherClient } from '@/lib/utils'
+import { postToParent } from '@/lib/utils'
 import {
   ChatBotMessageProps,
   ChatBotMessageSchema,
@@ -7,7 +7,7 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect, useRef, useState } from 'react'
 import { UploadClient } from '@uploadcare/upload-client'
-
+import { onGetLatestMessages } from '@/actions/conversation'
 import { useForm } from 'react-hook-form'
 
 const upload = new UploadClient({
@@ -209,26 +209,15 @@ export const useRealTime = (
     >
   >
 ) => {
-  const counterRef = useRef(1)
-
   useEffect(() => {
-    pusherClient.subscribe(chatRoom)
-    pusherClient.bind('realtime-mode', (data: any) => {
-      console.log('✅', data)
-      if (counterRef.current !== 1) {
-        setChats((prev: any) => [
-          ...prev,
-          {
-            role: data.chat.role,
-            content: data.chat.message,
-          },
-        ])
+    const interval = setInterval(async () => {
+      const messages = await onGetLatestMessages(chatRoom)
+      if (messages) {
+        setChats(
+          messages.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.message }))
+        )
       }
-      counterRef.current += 1
-    })
-    return () => {
-      pusherClient.unbind('realtime-mode')
-      pusherClient.unsubscribe(chatRoom)
-    }
-  }, [])
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [chatRoom])
 }

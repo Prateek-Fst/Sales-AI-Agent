@@ -1,6 +1,6 @@
 'use server'
 
-import { client } from '@/lib/prisma'
+import { client } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
 
 export const onDomainCustomerResponses = async (customerId: string) => {
@@ -114,39 +114,28 @@ export const saveAnswers = async (
 
 export const onGetAllBookingsForCurrentUser = async (userId: string) => {
   try {
-    const bookings = await client.bookings.findMany({
-      where: {
-        Customer: {
-          Domain: {
-            User: {
-              id: userId,
-            },
-          },
-        },
-      },
-      select: {
-        id: true,
-        slot: true,
-        createdAt: true,
-        date: true,
-        email: true,
-        domainId: true,
-        Customer: {
-          select: {
-            Domain: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
-    })
+    const { db } = await import('@/lib/mongodb').then(m => m.connectToDatabase())
+    const { collections } = await import('@/lib/models')
 
-    if (bookings) {
-      return {
-        bookings,
-      }
+    const domains = await db.collection(collections.domains).find({ userId }).toArray()
+    const domainIds = domains.map((d: any) => d.id)
+    const customers = await db.collection(collections.customers).find({ domainId: { $in: domainIds } }).toArray()
+    const customerIds = customers.map((c: any) => c.id)
+
+    const bookings = await db.collection(collections.bookings)
+      .find({ customerId: { $in: customerIds } })
+      .toArray()
+
+    return {
+      bookings: bookings.map((b: any) => {
+        const customer = customers.find((c: any) => c.id === b.customerId)
+        const domain = domains.find((d: any) => d.id === customer?.domainId)
+        return {
+          id: b.id, slot: b.slot, createdAt: b.createdAt,
+          date: b.date, email: b.email, domainId: b.domainId,
+          Customer: { Domain: { name: domain?.name } },
+        }
+      }),
     }
   } catch (error) {
     console.log(error)

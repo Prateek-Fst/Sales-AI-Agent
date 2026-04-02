@@ -1,7 +1,14 @@
 'use server'
 
-import { client } from '@/lib/prisma'
-import { pusherServer } from '@/lib/utils'
+import { client } from '@/lib/db'
+
+// No-op: message already stored by onStoreConversations, polling handles delivery
+export const onRealTimeChat = async (
+  chatroomId: string,
+  message: string,
+  id: string,
+  role: 'assistant' | 'user'
+) => {}
 
 export const onToggleRealtime = async (id: string, state: boolean) => {
   try {
@@ -51,39 +58,37 @@ export const onGetConversationMode = async (id: string) => {
 
 export const onGetDomainChatRooms = async (id: string) => {
   try {
-    const domains = await client.domain.findUnique({
-      where: {
-        id,
-      },
-      select: {
-        customer: {
-          select: {
-            email: true,
-            chatRoom: {
-              select: {
-                createdAt: true,
-                id: true,
-                message: {
-                  select: {
-                    message: true,
-                    createdAt: true,
-                    seen: true,
-                  },
-                  orderBy: {
-                    createdAt: 'desc',
-                  },
-                  take: 1,
-                },
-              },
-            },
-          },
-        },
-      },
-    })
+    const { db } = await import('@/lib/mongodb').then(m => m.connectToDatabase())
+    const { collections } = await import('@/lib/models')
 
-    if (domains) {
-      return domains
-    }
+    const customers = await db.collection(collections.customers).find({ domainId: id }).toArray()
+
+    const customerData = await Promise.all(
+      customers.map(async (customer: any) => {
+        const chatRooms = await db.collection(collections.chatRooms).find({ customerId: customer.id }).toArray()
+        const chatRoomData = await Promise.all(
+          chatRooms.map(async (room: any) => {
+            const messages = await db.collection(collections.chatMessages)
+              .find({ chatRoomId: room.id })
+              .sort({ createdAt: -1 })
+              .limit(1)
+              .toArray()
+            return {
+              id: room.id as string,
+              createdAt: new Date(room.createdAt),
+              message: messages.map((m: any) => ({
+                message: m.message as string,
+                createdAt: new Date(m.createdAt),
+                seen: m.seen as boolean,
+              })),
+            }
+          })
+        )
+        return { email: (customer.email ?? null) as string | null, chatRoom: chatRoomData }
+      })
+    )
+
+    return { customer: customerData }
   } catch (error) {
     console.log(error)
   }
@@ -138,19 +143,20 @@ export const onViewUnReadMessages = async (id: string) => {
   }
 }
 
-export const onRealTimeChat = async (
-  chatroomId: string,
-  message: string,
-  id: string,
-  role: 'assistant' | 'user'
-) => {
-  pusherServer.trigger(chatroomId, 'realtime-mode', {
-    chat: {
-      message,
-      id,
-      role,
-    },
-  })
+export const onGetLatestMessages = async (chatRoomId: string, after?: string) => {
+  try {
+    const messages = await client.chatMessage.findMany({
+      where: {
+        chatRoomId,
+        ...(after ? { createdAt: { gt: new Date(after) } } : {}),
+      },
+      select: { id: true, role: true, message: true, createdAt: true, seen: true },
+      orderBy: { createdAt: 'asc' },
+    })
+    return messages
+  } catch (error) {
+    console.log(error)
+  }
 }
 
 export const onOwnerSendMessage = async (

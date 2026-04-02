@@ -1,5 +1,7 @@
 'use server'
-import { client } from '@/lib/prisma'
+import { client } from '@/lib/db'
+import { connectToDatabase } from '@/lib/mongodb'
+import { collections } from '@/lib/models'
 import { getCurrentUser } from '@/lib/auth'
 import bcrypt from 'bcryptjs'
 
@@ -110,32 +112,22 @@ export const onGetAllAccountDomains = async () => {
   const user = await getCurrentUser()
   if (!user) return
   try {
-    const domains = await client.user.findUnique({
-      where: {
-        id: user.id,
-      },
-      select: {
-        id: true,
-        domains: {
-          select: {
-            name: true,
-            icon: true,
-            id: true,
-            customer: {
-              select: {
-                chatRoom: {
-                  select: {
-                    id: true,
-                    live: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    })
-    return { ...domains }
+    const { db } = await connectToDatabase()
+    const domains = await db.collection(collections.domains).find({ userId: user.id }).toArray()
+
+    const domainsWithChatRooms = await Promise.all(
+      domains.map(async (domain: any) => {
+        const customers = await db.collection(collections.customers).find({ domainId: domain.id }).toArray()
+        const customerWithRooms = await Promise.all(
+          customers.map(async (customer: any) => {
+            const chatRoom = await db.collection(collections.chatRooms).find({ customerId: customer.id }).toArray()
+            return { chatRoom: chatRoom.map((r: any) => ({ id: r.id, live: r.live })) }
+          })
+        )
+        return { id: domain.id, name: domain.name, icon: domain.icon, customer: customerWithRooms }
+      })
+    )
+    return { id: user.id, domains: domainsWithChatRooms }
   } catch (error) {
     console.log(error)
   }
@@ -162,42 +154,34 @@ export const onGetCurrentDomainInfo = async (domain: string) => {
   const user = await getCurrentUser()
   if (!user) return
   try {
-    const userDomain = await client.user.findUnique({
-      where: {
-        id: user.id,
-      },
-      select: {
-        subscription: {
-          select: {
-            plan: true,
-          },
-        },
-        domains: {
-          where: {
-            name: {
-              contains: domain,
-            },
-          },
-          select: {
-            id: true,
-            name: true,
-            icon: true,
-            userId: true,
-            products: true,
-            chatBot: {
-              select: {
-                id: true,
-                welcomeMessage: true,
-                icon: true,
-              },
-            },
-          },
-        },
-      },
-    })
-    if (userDomain) {
-      return userDomain
-    }
+    const { db } = await connectToDatabase()
+    const subscription = await db.collection(collections.billings).findOne({ userId: user.id })
+    const domains = await db.collection(collections.domains)
+      .find({ userId: user.id, name: { $regex: domain, $options: 'i' } })
+      .toArray()
+
+    const domainsWithDetails = await Promise.all(
+      domains.map(async (d: any) => {
+        const chatBot = await db.collection(collections.chatBots).findOne({ domainId: d.id })
+        const products = await db.collection(collections.products).find({ domainId: d.id }).toArray()
+        return {
+          id: d.id as string,
+          name: d.name as string,
+          icon: d.icon as string,
+          userId: d.userId as string,
+          products: products.map((p: any) => ({
+            id: p.id as string,
+            name: p.name as string,
+            price: p.price as number,
+            image: p.image as string,
+            createdAt: new Date(p.createdAt),
+            domainId: p.domainId as string | null,
+          })),
+          chatBot: chatBot ? { id: chatBot.id as string, welcomeMessage: chatBot.welcomeMessage as string, icon: chatBot.icon as string } : null,
+        }
+      })
+    )
+    return { subscription: { plan: subscription?.plan as 'STANDARD' | 'PRO' | 'ULTIMATE' }, domains: domainsWithDetails }
   } catch (error) {
     console.log(error)
   }

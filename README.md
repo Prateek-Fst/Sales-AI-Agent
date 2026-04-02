@@ -98,7 +98,7 @@ bun dev
 
 This will run the application in development mode.
 
-Navigate to http://localhost:3002 to view the application.
+Navigate to http://localhost:3000 to view the application.
 
 ## Chatdocrepo File Structure
 

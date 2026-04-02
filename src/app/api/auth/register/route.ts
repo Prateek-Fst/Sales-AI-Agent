@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
-import { client } from '@/lib/prisma'
+import { client } from '@/lib/db'
 import { signToken } from '@/lib/jwt'
 
 export async function POST(request: NextRequest) {

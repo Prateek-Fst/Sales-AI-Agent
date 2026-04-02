@@ -1,12 +1,12 @@
 import {
   onGetChatMessages,
   onGetDomainChatRooms,
+  onGetLatestMessages,
   onOwnerSendMessage,
-  onRealTimeChat,
   onViewUnReadMessages,
 } from '@/actions/conversation'
 import { useChatContext } from '@/context/user-chat-context'
-import { getMonthName, pusherClient } from '@/lib/utils'
+import { getMonthName } from '@/lib/utils'
 import {
   ChatBotMessageSchema,
   ConversationSearchSchema,
@@ -136,39 +136,18 @@ export const useChatWindow = () => {
   }, [chats, messageWindowRef])
 
   useEffect(() => {
-    if (chatRoom) {
-      pusherClient.subscribe(chatRoom)
-      pusherClient.bind('realtime-mode', (data: any) => {
-        setChats((prev) => [...prev, data.chat])
-      })
-
-      return () => {
-        pusherClient.unbind('realtime-mode')
-        pusherClient.unsubscribe(chatRoom)
-      }
-    }
+    if (!chatRoom) return
+    const interval = setInterval(async () => {
+      const latest = await onGetLatestMessages(chatRoom)
+      if (latest) setChats(latest)
+    }, 3000)
+    return () => clearInterval(interval)
   }, [chatRoom])
 
   const onHandleSentMessage = handleSubmit(async (values) => {
     try {
       reset()
-      const message = await onOwnerSendMessage(
-        chatRoom!,
-        values.content,
-        'assistant'
-      )
-      //WIP: Remove this line
-      if (message) {
-        //remove this
-        // setChats((prev) => [...prev, message.message[0]])
-
-        await onRealTimeChat(
-          chatRoom!,
-          message.message[0].message,
-          message.message[0].id,
-          'assistant'
-        )
-      }
+      await onOwnerSendMessage(chatRoom!, values.content, 'assistant')
     } catch (error) {
       console.log(error)
     }

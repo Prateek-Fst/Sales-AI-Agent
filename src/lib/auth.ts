@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers'
 import { verifyToken } from './jwt'
-import { client } from './prisma'
+import { client } from './db'
 
 export const getCurrentUser = async () => {
   const cookieStore = cookies()

@@ -1,4 +1,4 @@
-import { client } from '@/lib/prisma'
+import { client } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
@@ -110,8 +110,8 @@ export async function GET() {
 
     const accountLink = await stripe.accountLinks.create({
       account: account.id,
-      refresh_url: 'http://localhost:3002/callback/stripe/refresh',
-      return_url: 'http://localhost:3002/callback/stripe/success',
+      refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/callback/stripe/refresh`,
+      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/callback/stripe/success`,
       type: 'account_onboarding',
       collect: 'eventually_due',
     })

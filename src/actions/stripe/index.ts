@@ -1,6 +1,6 @@
 'use server'
 
-import { client } from '@/lib/prisma'
+import { client } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
 import Stripe from 'stripe'
 

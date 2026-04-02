@@ -1,42 +1,32 @@
 'use server'
 
-import { client } from '@/lib/prisma'
+import { client } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
 import nodemailer from 'nodemailer'
 
 export const onGetAllCustomers = async (id: string) => {
   try {
-    const customers = await client.user.findUnique({
-      where: {
-        id: id,
-      },
-      select: {
-        subscription: {
-          select: {
-            credits: true,
-            plan: true,
-          },
-        },
-        domains: {
-          select: {
-            customer: {
-              select: {
-                id: true,
-                email: true,
-                Domain: {
-                  select: {
-                    name: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+    const { db } = await import('@/lib/mongodb').then(m => m.connectToDatabase())
+    const { collections } = await import('@/lib/models')
+
+    const billingsCollection = db.collection(collections.billings)
+    const subscription = await billingsCollection.findOne({ userId: id })
+
+    const domainsCollection = db.collection(collections.domains)
+    const domains = await domainsCollection.find({ userId: id }).toArray()
+    const domainIds = domains.map((d: any) => d.id)
+
+    const customersCollection = db.collection(collections.customers)
+    const customers = await customersCollection.find({ domainId: { $in: domainIds } }).toArray()
+
+    const customersWithDomain = customers.map((c: any) => {
+      const domain = domains.find((d: any) => d.id === c.domainId)
+      return { id: c.id, email: c.email, Domain: domain ? { name: domain.name } : null }
     })
 
-    if (customers) {
-      return customers
+    return {
+      subscription: subscription as { plan: 'STANDARD' | 'PRO' | 'ULTIMATE'; credits: number } | null,
+      domains: [{ customer: customersWithDomain }],
     }
   } catch (error) {}
 }
@@ -200,37 +190,21 @@ export const onGetAllCustomerResponses = async (id: string) => {
   try {
     const user = await getCurrentUser()
     if (!user) return null
-    const answers = await client.user.findUnique({
-      where: {
-        id: user.id,
-      },
-      select: {
-        domains: {
-          select: {
-            customer: {
-              select: {
-                questions: {
-                  where: {
-                    customerId: id,
-                    answered: {
-                      not: null,
-                    },
-                  },
-                  select: {
-                    question: true,
-                    answered: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    })
 
-    if (answers) {
-      return answers.domains
-    }
+    const { db } = await import('@/lib/mongodb').then(m => m.connectToDatabase())
+    const { collections } = await import('@/lib/models')
+
+    const domains = await db.collection(collections.domains).find({ userId: user.id }).toArray()
+    const domainIds = domains.map((d: any) => d.id)
+    const customers = await db.collection(collections.customers).find({ domainId: { $in: domainIds } }).toArray()
+    const customerIds = customers.map((c: any) => c.id)
+
+    const responses = await db.collection(collections.customerResponses).find({
+      customerId: id,
+      answered: { $exists: true, $ne: null },
+    }).toArray()
+
+    return [{ customer: [{ questions: responses.map((r: any) => ({ question: r.question as string, answered: (r.answered ?? null) as string | null })) }] }]
   } catch (error) {
     console.log(error)
   }
