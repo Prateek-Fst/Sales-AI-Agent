@@ -106,59 +106,75 @@ export const useChatBot = () => {
     })
   }, [])
 
+  // Poll for owner messages when live mode is active
+  useEffect(() => {
+    if (!onRealTime?.mode || !onRealTime?.chatroom) return
+
+    const poll = async () => {
+      if (document.visibilityState === 'hidden') return
+      const messages = await onGetLatestMessages(onRealTime.chatroom)
+      if (messages) {
+        setOnChats(
+          messages.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.message }))
+        )
+      }
+    }
+
+    const interval = setInterval(poll, 5000)
+    return () => clearInterval(interval)
+  }, [onRealTime?.mode, onRealTime?.chatroom])
+
   const onStartChatting = handleSubmit(async (values) => {
     console.log('ALL VALUES', values)
 
     if (values.image.length) {
       console.log('IMAGE fROM ', values.image[0])
       const uploaded = await upload.uploadFile(values.image[0])
+      setOnChats((prev: any) => [
+        ...prev,
+        { role: 'user', content: uploaded.uuid },
+      ])
+
       if (!onRealTime?.mode) {
-        setOnChats((prev: any) => [
-          ...prev,
-          {
-            role: 'user',
-            content: uploaded.uuid,
-          },
-        ])
-      }
-
-      console.log('🟡 RESPONSE FROM UC', uploaded.uuid)
-      setOnAiTyping(true)
-      const response = await onAiChatBotAssistant(
-        currentBotId!,
-        onChats,
-        'user',
-        uploaded.uuid
-      )
-
-      if (response) {
-        setOnAiTyping(false)
-        if (response.live) {
-          setOnRealTime((prev) => ({
-            ...prev,
-            chatroom: response.chatRoom,
-            mode: response.live,
-          }))
-        } else {
-          setOnChats((prev: any) => [...prev, response.response])
+        setOnAiTyping(true)
+        const response = await onAiChatBotAssistant(
+          currentBotId!,
+          onChats,
+          'user',
+          uploaded.uuid
+        )
+        if (response) {
+          setOnAiTyping(false)
+          if (response.live) {
+            setOnRealTime((prev) => ({
+              ...prev,
+              chatroom: response.chatRoom,
+              mode: response.live,
+            }))
+          } else {
+            setOnChats((prev: any) => [...prev, response.response])
+          }
         }
+      } else {
+        await onAiChatBotAssistant(currentBotId!, onChats, 'user', uploaded.uuid)
       }
     }
     reset()
 
     if (values.content) {
-      if (!onRealTime?.mode) {
-        setOnChats((prev: any) => [
-          ...prev,
-          {
-            role: 'user',
-            content: values.content,
-          },
-        ])
+      // Always show the user's own message immediately
+      setOnChats((prev: any) => [
+        ...prev,
+        { role: 'user', content: values.content },
+      ])
+
+      if (onRealTime?.mode) {
+        // In live mode: just store the message in DB, polling will sync the rest
+        await onAiChatBotAssistant(currentBotId!, onChats, 'user', values.content)
+        return
       }
 
       setOnAiTyping(true)
-
       const response = await onAiChatBotAssistant(
         currentBotId!,
         onChats,

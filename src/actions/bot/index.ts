@@ -196,11 +196,7 @@ export const onAiChatBotAssistant = async (
       messages: [
         {
           role: 'assistant',
-          content: `
-            You are a highly knowledgeable and experienced sales representative for ${domain.name}. 
-            Your goal is to have a natural conversation to understand customer needs and guide them towards booking appointments or making purchases.
-            Start with a warm welcome and naturally ask for their email address. Be respectful and stay in character as a representative of ${domain.name}.
-          `,
+          content: `You are a sales assistant for ${domain.name}. Be brief and friendly. Ask the customer for their email address in one short sentence.`,
         },
         ...chat,
         { role: 'user', content: message },

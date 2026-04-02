@@ -137,10 +137,14 @@ export const useChatWindow = () => {
 
   useEffect(() => {
     if (!chatRoom) return
-    const interval = setInterval(async () => {
+
+    const poll = async () => {
+      if (document.visibilityState === 'hidden') return
       const latest = await onGetLatestMessages(chatRoom)
       if (latest) setChats(latest)
-    }, 3000)
+    }
+
+    const interval = setInterval(poll, 5000)
     return () => clearInterval(interval)
   }, [chatRoom])
 
