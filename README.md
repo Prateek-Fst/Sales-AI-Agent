@@ -4,73 +4,66 @@
 
 ## Introduction
 
-Sales-ai
-An AI-powered chatbot designed to enhance customer engagement by providing customizable interactions. Sales-AI leverages advanced natural language processing (NLP) to understand user queries and respond intelligently. It allows business owners to personalize the chatbot's functionality, including custom greetings, email collection, and direct chat redirection for a tailored user experience.
+An AI-powered chatbot designed to enhance customer engagement by providing customizable interactions. Sales-AI leverages Groq's LLaMA model for natural language processing to understand user queries and respond intelligently. It allows business owners to personalize the chatbot's functionality, including custom greetings, email collection, real-time live chat handoff, appointment booking, and product payments — all backed by MongoDB.
+
+## Tech Stack
+
+- **Framework** — Next.js 14 (App Router)
+- **Database** — MongoDB (via native MongoDB driver)
+- **Auth** — Custom JWT-based authentication (bcryptjs + jsonwebtoken)
+- **AI** — Groq SDK (LLaMA 3.3 70B)
+- **Real-time** — Polling (replaces Pusher)
+- **Payments** — Stripe
+- **File Uploads** — UploadCare
+- **Email** — Nodemailer (Gmail)
+- **UI** — Tailwind CSS + Radix UI + shadcn/ui
 
 ## Getting Started
 
-To get started with Sales-ai, follow these steps:
-
-## Clone the Repository
+### Clone the Repository
 
 ```bash
-git@github.com:Maheshwarreddy970/Sales-ai.git
-```
-
-```bash
+git clone git@github.com:Maheshwarreddy970/Sales-ai.git
 cd Sales-ai
 ```
 
-## Environment Variables
+### Environment Variables
 
-Before running the application, set up the environment variables. Rename `.env.example to .env ` and set your own variables.
+Create a `.env` file in the root of the project and fill in your credentials:
 
 ```bash
-mv .env.example .env
-nano .env  # (or use any text editor to modify .env)
+cp .env.example .env
 ```
 
 ### .env.example
 
-Here is an example of the environment variables needed for the project. Replace the placeholder values with your actual credentials.
-
 ```bash
-# NodeMailer Configuration
+# App URL (change to your production URL when deploying)
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# MongoDB
+MONGODB_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/sales-ai
+MONGODB_DB_NAME=sales-ai
+
+# NodeMailer (Gmail)
 NODE_MAILER_EMAIL=your_email@gmail.com
 NODE_MAILER_GMAIL_APP_PASSWORD=your_gmail_app_password
 
-# Pusher Configuration
-NEXT_PUBLIC_PUSHER_APP_CLUSTOR=your_app_cluster
-NEXT_PUBLIC_PUSHER_APP_SECRET=your_app_secret
-NEXT_PUBLIC_PUSHER_APP_KEY=your_app_key
-NEXT_PUBLIC_PUSHER_APP_ID=your_app_id
-
-# OpenAI Configuration
-OPEN_AI_KEY=your_openai_key
-
-# UploadCare Configuration
-NEXT_PUBLIC_UPLOAD_CARE_PUBLIC_KEY=your_uploadcare_public_key
-UPLOAD_CARE_SECRET_KEY=your_uploadcare_secret_key
-
-# Clerk Configuration
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
-CLERK_SECRET_KEY=your_clerk_secret_key
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/auth/sign-in
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=/auth/sign-up
-
-# Stripe Configuration
+# Stripe
 STRIPE_SECRET=your_stripe_secret_key
-NEXT_PUBLIC_STRIPE_PUBLISH_KEY=your_stripe_publish_key
+NEXT_PUBLIC_STRIPE_PUBLISH_KEY=your_stripe_publishable_key
 
-# Prisma Configuration
-DATABASE_URL='your_database_url'
+# UploadCare
+NEXT_PUBLIC_UPLOAD_CARE_PUBLIC_KEY=your_uploadcare_public_key
 
+# Groq AI
+GROQ_API_KEY=your_groq_api_key
 
+# JWT
+JWT_SECRET=your_jwt_secret_key
 ```
 
-Make sure to fill in the necessary environment variables in the .env file.
-
-## Install Dependencies
+### Install Dependencies
 
 ```bash
 npm install
@@ -82,64 +75,78 @@ pnpm install
 bun install
 ```
 
-## Development
-
-To start the development server:
+### Development
 
 ```bash
 npm run dev
 # or
-yarn dev
-# or
-pnpm dev
-# or
 bun dev
 ```
 
-This will run the application in development mode.
+Navigate to [http://localhost:3000](http://localhost:3000) to view the application.
 
-Navigate to http://localhost:3000 to view the application.
+### Production Build
 
-## Chatdocrepo File Structure
-
-ChatDoc uses a monorepo setup managed by Turborepo and includes a Next.js application. Below is an overview of the file structure:
-
-````bash
-# Sales-ai
-
-Sales-ai is a cutting-edge web application designed to provide seamless user experiences with robust backend support. This repository houses the core of Sales-ai, including its frontend, backend, and associated configurations.
+```bash
+npm run build
+npm run start
+```
 
 ## Project Structure
-
-Below is the structure of the main folders and files:
 
 ```plaintext
 Sales-ai/
 │
-├── prisma/                         # Prisma ORM setup and schema files
 ├── public/                         # Public assets (images, fonts, etc.)
-├── src/                            # Source code for the application
-│   ├── actions/                    # Actions and logic for interacting with services
-│   ├── app/                        # Main application folder, including pages and routes
+├── src/
+│   ├── actions/                    # Server actions
+│   │   ├── appointment/            # Booking logic
+│   │   ├── auth/                   # Auth helpers
+│   │   ├── bot/                    # AI chatbot logic (Groq)
+│   │   ├── conversation/           # Chat room & polling messages
+│   │   ├── dashboard/              # Dashboard stats
+│   │   ├── landing/                # Blog post fetching
+│   │   ├── mail/                   # Email marketing campaigns
+│   │   ├── mailer/                 # Nodemailer transporter
+│   │   ├── payments/               # Stripe payment intents
+│   │   ├── settings/               # Domain & chatbot settings
+│   │   └── stripe/                 # Stripe subscription management
+│   ├── app/                        # Next.js App Router pages & API routes
+│   │   ├── (dashboard)/            # Protected dashboard pages
+│   │   ├── api/                    # API routes (auth, stripe)
+│   │   ├── auth/                   # Sign-in / Sign-up pages
+│   │   ├── blogs/                  # Blog post pages
+│   │   ├── chatbot/                # Embeddable chatbot iframe page
+│   │   └── portal/                 # Customer appointment & payment portal
 │   ├── components/                 # Reusable UI components
-│   ├── constants/                  # Application constants and configurations
-│   ├── context/                    # React context for global state management
+│   ├── constants/                  # App-wide constants
+│   ├── context/                    # React context providers
 │   ├── hooks/                      # Custom React hooks
-│   ├── icons/                      # Icon components and assets
-│   ├── lib/                        # Libraries and utility functions
-│   ├── schemas/                    # Validation schemas
-│   ├── middleware.ts               # Middleware functions
-├── .eslintrc.json                  # ESLint configuration file
-├── .gitignore                      # Files and directories to be ignored by Git
-├── README.md                       # Project documentation
-├── components.json                 # Configuration for components
-├── next-env.d.ts                   # TypeScript environment settings for Next.js
-├── next.config.mjs                 # Next.js configuration file
-├── package-lock.json               # Auto-generated file for package version locking
-├── package.json                    # Node.js dependencies and scripts
-├── postcss.config.js               # PostCSS configuration
-├── tailwind.config.ts              # Tailwind CSS configuration
-├── tsconfig.json                   # TypeScript configuration
-├── yarn.lock                       # Yarn dependency lock file
+│   ├── icons/                      # SVG icon components
+│   ├── lib/
+│   │   ├── auth.ts                 # getCurrentUser via JWT cookie
+│   │   ├── db.ts                   # MongoDB client wrapper
+│   │   ├── jwt.ts                  # JWT sign/verify
+│   │   ├── models.ts               # MongoDB collection names & types
+│   │   ├── mongodb.ts              # MongoDB connection
+│   │   └── utils.ts                # Utility functions
+│   ├── schemas/                    # Zod validation schemas
+│   └── middleware.ts               # Route middleware
+├── .env                            # Environment variables (do not commit)
+├── .env.example                    # Environment variable template
+├── .eslintrc.json
+├── next.config.mjs
+├── package.json
+├── tailwind.config.ts
+└── tsconfig.json
+```
 
-````
+## Key Features
+
+- **AI Chatbot** — Embedded via iframe, powered by Groq LLaMA. Collects customer emails, answers filter questions, and escalates to live mode.
+- **Live Chat Handoff** — Owner can take over any conversation in real-time. Uses 3-second polling instead of WebSockets (no external service needed).
+- **Appointment Booking** — Customers can book time slots through a portal link sent by the AI.
+- **Product Payments** — Stripe-powered checkout via portal link.
+- **Email Marketing** — Create campaigns, add customers, send bulk emails with credit tracking.
+- **Multi-domain Support** — Each user can manage multiple domains with separate chatbots.
+- **Subscription Plans** — STANDARD / PRO / ULTIMATE tiers with domain and credit limits.
